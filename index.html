@@ -635,7 +635,7 @@
   // ---- Config: sumber data live untuk dashboard ini ----------------------
   // Isi CSV_URL dengan link "Publish to web" (CSV) dari tab "Data" di
   // Google Sheet master. Lihat README.md untuk cara mendapatkannya.
-  var DASHBOARD_CSV_URL = "GANTI_DENGAN_URL_CSV_PUBLISH_TO_WEB";
+  var DASHBOARD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQN2HeYD4waew7etn388RUIajemyviiMOVcSr9tDSiOaTgctjhJ2NnntHnJihqwSGVJ5b4E1g9chCHP/pub?gid=0&single=true&output=csv";
 </script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="etl-client.js"></script>
@@ -2165,7 +2165,7 @@
   }
 
   (function loadLiveData() {
-    if (!DASHBOARD_CSV_URL || DASHBOARD_CSV_URL.indexOf("GANTI_DENGAN_URL") !== -1) {
+    if (!DASHBOARD_CSV_URL || DASHBOARD_CSV_URL.indexOf("https://docs.google.com/spreadsheets/d/e/2PACX-1vQN2HeYD4waew7etn388RUIajemyviiMOVcSr9tDSiOaTgctjhJ2NnntHnJihqwSGVJ5b4E1g9chCHP/pub?gid=0&single=true&output=csv") !== -1) {
       setLiveStatus("Data belum terhubung ke sumber live (lihat README.md)", true);
       return;
     }
