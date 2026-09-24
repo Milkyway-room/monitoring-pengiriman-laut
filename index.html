@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Pengiriman</title>
+<title>Monitoring Pengiriman Laut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --page:       #f9f9f7;
-    --surface:    #fcfcfb;
-    --surface-2:  #f3f2ee;
+    --page:       #ffffff;
+    --surface:    #ffffff;
+    --surface-2:  #f4f4f2;
     --ink:        #0b0b0b;
     --ink-2:      #52514e;
     --muted:      #898781;
-    --grid:       #e1e0d9;
+    --grid:       #e6e5de;
     --baseline:   #c3c2b7;
     --border:     rgba(11,11,11,0.10);
     --accent:     #2a78d6;
@@ -31,31 +31,8 @@
     --critical-bg:rgba(208,59,59,0.10);
     color-scheme: light;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --page:      #0d0d0d;
-      --surface:   #1a1a19;
-      --surface-2: #212120;
-      --ink:       #ffffff;
-      --ink-2:     #c3c2b7;
-      --muted:     #898781;
-      --grid:      #2c2c2a;
-      --baseline:  #383835;
-      --border:    rgba(255,255,255,0.10);
-      --accent:    #3987e5;
-      --accent-2:  #199e70;
-      --accent-3:  #a78bfa;
-      --good:      #0ca30c;
-      --warning:   #fab219;
-      --serious:   #ec835a;
-      --critical:  #e66767;
-      --good-bg:    rgba(12,163,12,0.16);
-      --warning-bg: rgba(250,178,25,0.14);
-      --serious-bg: rgba(236,131,90,0.16);
-      --critical-bg:rgba(230,103,103,0.14);
-      color-scheme: dark;
-    }
-  }
+  /* Dashboard always renders in the light palette above, regardless of system
+     dark-mode preference — only an explicit data-theme="dark" opts back in. */
   :root[data-theme="dark"] {
     --page:      #0d0d0d;
     --surface:   #1a1a19;
@@ -81,35 +58,54 @@
   }
 
   * { box-sizing: border-box; }
+  html { background: var(--page); }
   body {
     margin: 0;
     background: var(--page);
     color: var(--ink);
     font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    padding: 0 16px;
-    padding-block: 20px 48px;
+    padding-inline: clamp(16px, 3vw, 48px);
+    padding-block: 22px 48px;
   }
   .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
   .tab-num { font-variant-numeric: tabular-nums; }
 
-  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  .wrap { max-width: 1600px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
   #mainView, #stagePageView { display: flex; flex-direction: column; gap: 22px; }
   #mainView[hidden], #stagePageView[hidden] { display: none; }
 
   /* header */
   header {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;
+    background: linear-gradient(135deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px 26px;
+    position: relative;
+    overflow: hidden;
   }
-  .brand { display: flex; flex-direction: column; gap: 4px; }
+  header::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 5px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-3));
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-mark {
+    flex: none; width: 46px; height: 46px; border-radius: 13px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-3));
+    color: #fff; font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(42,120,214,0.28);
+  }
+  .brand-text { display: flex; flex-direction: column; gap: 4px; }
   .brand .eyebrow {
     font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600;
   }
-  .brand h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
-  .brand .sub { margin: 0; color: var(--ink-2); font-size: 13.5px; max-width: 46ch; }
+  .brand h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand .sub { margin: 0; color: var(--ink-2); font-size: 13.5px; max-width: 54ch; }
   .status-line {
     display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2);
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 7px 14px 7px 10px; white-space: nowrap; flex-wrap: wrap;
+    padding: 7px 14px 7px 10px; white-space: nowrap; flex-wrap: wrap; box-shadow: 0 1px 4px rgba(11,11,11,0.04);
   }
   .live-status { font-size: 11.5px; color: var(--muted); }
   .live-status.is-error { color: var(--critical, #c0392b); }
@@ -329,17 +325,37 @@
   .stage-nav { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
   .stage-nav-card {
     text-align: left; font: inherit; cursor: pointer; color: var(--ink);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--nav-accent, var(--accent));
+    border-radius: 12px; padding: 8px 14px 8px 12px;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(11,11,11,0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   }
-  .stage-nav-card:hover { border-color: var(--accent); background: var(--surface-2); }
+  .stage-nav-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(11,11,11,0.10);
+    background: color-mix(in srgb, var(--nav-accent, var(--accent)) 7%, var(--surface));
+    border-color: color-mix(in srgb, var(--nav-accent, var(--accent)) 45%, var(--border));
+  }
+  .stage-nav-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(11,11,11,0.08); }
   .stage-nav-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .stage-nav-card .stage-nav-name { font-weight: 700; font-size: 12.5px; }
-  .stage-nav-card .stage-nav-count { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .stage-nav-card .stage-nav-count { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--nav-accent, var(--accent)); }
   .stage-nav-card .stage-nav-count .unit { font-size: 11px; font-weight: 500; color: var(--ink-2); margin-left: 2px; }
   .stage-nav-card .stage-nav-foot { font-size: 11px; color: var(--ink-2); }
   .stage-nav-card .stage-nav-foot b { color: var(--critical); font-weight: 700; }
-  .stage-nav-card .stage-nav-arrow { color: var(--accent); font-size: 12px; line-height: 1; }
+  .stage-nav-card .stage-nav-arrow {
+    color: var(--nav-accent, var(--accent)); font-size: 13px; line-height: 1; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 21px; height: 21px; border-radius: 50%; flex: none;
+    background: color-mix(in srgb, var(--nav-accent, var(--accent)) 14%, transparent);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .stage-nav-card:hover .stage-nav-arrow {
+    transform: translateX(3px);
+    background: color-mix(in srgb, var(--nav-accent, var(--accent)) 24%, transparent);
+  }
 
   .back-btn {
     display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 13px; font-weight: 600;
@@ -422,9 +438,11 @@
 
   <header>
     <div class="brand">
-      <div class="eyebrow">Kawan Lama Group</div>
-      <h1>Monitoring Pengiriman</h1>
-      <p class="sub">Status kontainer aktif dari Jakarta &amp; Surabaya &mdash; posisi tiap leg (POO, Sailing, Yard, Dooring) dan alert keterlambatan, ditarik langsung dari spreadsheet MASTER.</p>
+      <div class="brand-text">
+        <div class="eyebrow">Kawan Lama Group</div>
+        <h1>Monitoring Pengiriman Laut</h1>
+        <p class="sub">Status kontainer aktif dari Jakarta &amp; Surabaya &mdash; posisi tiap leg (POO, Sailing, Yard, Dooring) dan alert keterlambatan, ditarik langsung dari spreadsheet MASTER.</p>
+      </div>
     </div>
     <div class="status-line">
       <span class="live-dot" aria-hidden="true"></span>
@@ -464,7 +482,7 @@
   </div>
 
   <div class="stage-nav-compact-wrap">
-    <span class="stage-nav-compact-label">Dashboard per stage:</span>
+    <span class="stage-nav-compact-label">Dashboard per stage <span style="font-weight:400; text-transform:none; letter-spacing:0;">(klik untuk lihat detail)</span>:</span>
     <div class="stage-nav stage-nav-compact" id="stageNavCards"></div>
   </div>
 
@@ -635,7 +653,7 @@
   // ---- Config: sumber data live untuk dashboard ini ----------------------
   // Isi CSV_URL dengan link "Publish to web" (CSV) dari tab "Data" di
   // Google Sheet master. Lihat README.md untuk cara mendapatkannya.
-  var DASHBOARD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQN2HeYD4waew7etn388RUIajemyviiMOVcSr9tDSiOaTgctjhJ2NnntHnJihqwSGVJ5b4E1g9chCHP/pub?gid=0&single=true&output=csv";
+  var DASHBOARD_CSV_URL = "GANTI_DENGAN_URL_CSV_PUBLISH_TO_WEB";
 </script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="etl-client.js"></script>
@@ -759,6 +777,15 @@
         '<span class="stage-bar"><span style="width:' + pct + '%; background: var(' + STAGE_COLOR_VAR[st] + ')"></span></span>' +
         '<span class="stage-count tab-num">' + fmtInt(count) + '</span>';
       group.appendChild(item);
+
+      var cnt = (s.stage_cont && s.stage_cont[st]) || { c20: 0, c40: 0 };
+      var contRow = document.createElement("div");
+      contRow.className = "tujuan-cont-row";
+      contRow.innerHTML =
+        '<span class="cont-stat"><span class="cont-label">Cont-20</span><span class="cont-value">' + fmtInt(cnt.c20) + '</span></span>' +
+        '<span class="cont-stat"><span class="cont-label">Cont-40</span><span class="cont-value">' + fmtInt(cnt.c40) + '</span></span>' +
+        '<span class="cont-stat cont-stat-total"><span class="cont-label">Total</span><span class="cont-value">' + fmtInt(cnt.c20 + cnt.c40) + '</span></span>';
+      group.appendChild(contRow);
 
       var alertKey = STAGE_ALERT_KEY[st];
       if (alertKey) {
@@ -1461,9 +1488,11 @@
 
   function buildView(rows) {
     var stage_by_port = {};
+    var stage_cont = {};
     STAGE_ORDER.forEach(function (st) {
       stage_by_port[st] = {};
       SITES.forEach(function (site) { stage_by_port[st][site] = 0; });
+      stage_cont[st] = { c20: 0, c40: 0 };
     });
     var alert_by_stage_port = { POO: {}, Sailing: {}, Yard: {} };
     SITES.forEach(function (site) {
@@ -1483,6 +1512,10 @@
     rows.forEach(function (r) {
       var posLabel = STAGE_TO_POSITION[r.stage];
       if (stage_by_port[posLabel] && stage_by_port[posLabel][r.site] !== undefined) stage_by_port[posLabel][r.site]++;
+      if (stage_cont[posLabel]) {
+        if (r.container_type === "20") stage_cont[posLabel].c20++;
+        else if (r.container_type === "40") stage_cont[posLabel].c40++;
+      }
 
       if (alert_by_stage_port[r.stage] && alert_by_stage_port[r.stage][r.site] && r.alert) {
         var bucket = alert_by_stage_port[r.stage][r.site];
@@ -1515,6 +1548,7 @@
       total_active: rows.length,
       risky_total: risky_total,
       stage_by_port: stage_by_port,
+      stage_cont: stage_cont,
       alert_by_stage_port: alert_by_stage_port,
       risky_by_port: risky_by_port,
       risky_by_stage: risky_by_stage,
@@ -1720,6 +1754,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "stage-nav-card";
+      btn.style.setProperty("--nav-accent", "var(" + (STAGE_LABEL_ACCENT[stage] || "--accent") + ")");
       btn.innerHTML =
         '<span class="stage-nav-name">' + esc(stage) + '</span>' +
         '<span class="stage-nav-count">' + fmtInt(rows.length) + '<span class="unit">aktif</span></span>' +
@@ -1852,6 +1887,15 @@
         var meta = ALERT_META[key] || { cls: "neutral", label: key };
         return '<span class="chip ' + meta.cls + '"><span class="ic"></span><span class="n">' + fmtInt(n) + '</span> ' + esc(meta.label || key) + '</span>';
       }).join("");
+      var c20 = 0, c40 = 0;
+      rows.forEach(function (r) {
+        if (r.container_type === "20") c20++;
+        else if (r.container_type === "40") c40++;
+      });
+      var contHtml =
+        '<span class="cont-stat"><span class="cont-label">Cont-20</span><span class="cont-value">' + fmtInt(c20) + '</span></span>' +
+        '<span class="cont-stat"><span class="cont-label">Cont-40</span><span class="cont-value">' + fmtInt(c40) + '</span></span>' +
+        '<span class="cont-stat cont-stat-total"><span class="cont-label">Total</span><span class="cont-value">' + fmtInt(c20 + c40) + '</span></span>';
       var card = document.createElement("div");
       card.className = "site-card clickable " + (site === "Jakarta" ? "site-jkt" : "site-sda");
       card.innerHTML =
@@ -1859,6 +1903,7 @@
           '<span class="site-name"><span class="dot ' + (site === "Jakarta" ? "jkt" : "sda") + '"></span>' + esc(SITE_LABEL[site] || site) + '</span>' +
           '<span class="site-total"><b>' + fmtInt(rows.length) + '</b> aktif di ' + esc(stage) + '</span>' +
         '</div>' +
+        '<div class="tujuan-cont-row">' + contHtml + '</div>' +
         '<div class="chip-row">' + (chips || '<span class="chip neutral"><span class="ic"></span>tidak ada data alert</span>') + '</div>' +
         '<div class="site-hint"><span class="expand-arrow">&#9662;</span> Klik untuk lihat detail tujuan, kapal &amp; jadwal</div>';
       card.addEventListener("click", function (e) {
