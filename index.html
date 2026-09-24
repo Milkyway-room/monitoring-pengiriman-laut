@@ -2189,7 +2189,9 @@
   function renderAll(summary, updatedAt) {
     renderUpdated(updatedAt);
     var rawRows = (summary && Array.isArray(summary.active_rows)) ? summary.active_rows : [];
-    ACTIVE_ROWS = rawRows.map(expandRow);
+    // Shipments still flagged "Belum Checkout" haven't actually left origin yet, so they're
+    // excluded from every count, chart and table on the dashboard rather than just hidden.
+    ACTIVE_ROWS = rawRows.map(expandRow).filter(function (r) { return r.alert !== "Belum Checkout"; });
     TOTAL_ALL = (summary && summary.total_all) || 0;
     TOTAL_DELIVERED = (summary && summary.total_delivered) || 0;
     renderGlobalFilterOptions();
