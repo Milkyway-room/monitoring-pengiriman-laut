@@ -115,6 +115,21 @@
     box-shadow: 0 0 0 3px var(--good-bg);
   }
 
+  /* page heading — shows which dashboard (Utama / POO / Sailing / Yard / Dooring) is on screen */
+  .page-heading {
+    display: flex; align-items: stretch; gap: 12px;
+    padding: 12px 18px; border-radius: 12px;
+    background: color-mix(in srgb, var(--page-accent, var(--accent)) 8%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--page-accent, var(--accent)) 28%, var(--border));
+  }
+  .page-heading-bar { width: 5px; border-radius: 3px; background: var(--page-accent, var(--accent)); flex: none; }
+  .page-heading-text { display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+  .page-heading-eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--page-accent, var(--accent));
+  }
+  .page-heading-title { margin: 0; font-size: 23px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+
   /* kpi row */
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
@@ -423,14 +438,15 @@
   .modal-body { overflow: auto; padding: 4px 0 8px; }
   .modal-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 620px; }
   .modal-table thead th {
-    text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    text-align: center; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
     font-weight: 600; padding: 7px 16px; border-bottom: 1px solid var(--grid); white-space: nowrap;
     position: sticky; top: 0; background: var(--surface);
   }
-  .modal-table tbody td { padding: 8px 16px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  .modal-table tbody td { padding: 8px 16px; border-bottom: 1px solid var(--grid); white-space: nowrap; text-align: center; }
   .modal-table tbody tr:last-child td { border-bottom: none; }
   .modal-table tbody tr:hover td { background: var(--surface-2); }
-  .modal-table td.route { white-space: normal; min-width: 130px; }
+  .modal-table td.route { white-space: normal; min-width: 130px; text-align: center; }
+  .modal-table td .chip-row { justify-content: center; }
   .modal-empty { text-align: center; color: var(--muted); padding: 28px 10px; font-size: 12.5px; }
 </style>
 </head>
@@ -489,6 +505,13 @@
   </div>
 
   <div id="mainView">
+
+  <div class="page-heading" style="--page-accent: var(--accent-3);">
+    <span class="page-heading-bar"></span>
+    <div class="page-heading-text">
+      <h2 class="page-heading-title">Dashboard Utama</h2>
+    </div>
+  </div>
 
   <div class="kpis">
     <div class="kpi">
@@ -585,11 +608,14 @@
       <span class="hint" id="stagePageFilterHint"></span>
     </div>
 
-    <div class="section">
-      <div class="section-head">
-        <h2 id="stagePageTitle">&mdash;</h2>
+    <div class="page-heading" id="stagePageHeading">
+      <span class="page-heading-bar"></span>
+      <div class="page-heading-text">
+        <h2 class="page-heading-title" id="stagePageTitle">&mdash;</h2>
       </div>
+    </div>
 
+    <div class="section">
       <div class="kpis" id="stageDetailKpis"></div>
 
       <div id="stageDetailChartWrap"></div>
@@ -1767,13 +1793,14 @@
     });
   }
 
+  var STAGE_PAGE_TITLE = { "POO": "Port of Origin (POO)", "Sailing": "Sailing", "Yard": "Yard", "Dooring": "Dooring" };
   function openStagePage(stage) {
     currentStageDetailTab = stage;
     renderStageDetailKpis();
     renderStageDetailChart();
     renderStageDetailTable();
-    document.getElementById("stagePageTitle").textContent = "Dashboard " + stage;
-    applyH2Accent("stagePageTitle", stage);
+    document.getElementById("stagePageTitle").textContent = "Dashboard " + (STAGE_PAGE_TITLE[stage] || stage);
+    document.getElementById("stagePageHeading").style.setProperty("--page-accent", "var(" + (STAGE_LABEL_ACCENT[stage] || "--accent") + ")");
     document.getElementById("mainView").hidden = true;
     document.getElementById("stagePageView").hidden = false;
     window.scrollTo(0, 0);
