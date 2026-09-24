@@ -2249,10 +2249,16 @@
   // page is never empty while the live fetch below is in flight.
   renderAll(SEED_SUMMARY, SEED_SUMMARY.updatedAt);
 
-  // live data: fetched fresh from the Google Sheet (as CSV) every time this
-  // page is opened, then run through the same transform logic as the
-  // original Python ETL (see etl-client.js). Falls back to the embedded
-  // snapshot above if the fetch or parse fails for any reason.
+  // live data: fetched fresh from the Google Sheet (as CSV), then run through the same
+  // transform logic as the original Python ETL (see etl-client.js). Falls back to the
+  // embedded snapshot above if the fetch or parse fails for any reason. Auto-refreshes on
+  // an interval (see AUTO_REFRESH_MS below) so the page updates itself without a manual
+  // reload — pausing while the tab is in the background and catching up the moment it's
+  // visible again, so it never hammers the sheet while nobody's looking at it.
+  var AUTO_REFRESH_MS = 120000; // 2 minutes
+  var isLoadingLive = false;
+  var autoRefreshTimer = null;
+
   function setLiveStatus(text, isError) {
     var el = document.getElementById("liveStatus");
     if (!el) return;
@@ -2260,7 +2266,7 @@
     el.classList.toggle("is-error", !!isError);
   }
 
-  (function loadLiveData() {
+  function loadLiveData() {
     if (!DASHBOARD_CSV_URL || DASHBOARD_CSV_URL.indexOf("GANTI_DENGAN_URL") !== -1) {
       setLiveStatus("Data belum terhubung ke sumber live (lihat README.md)", true);
       return;
@@ -2269,6 +2275,8 @@
       setLiveStatus("Gagal memuat komponen parser data", true);
       return;
     }
+    if (isLoadingLive) return;
+    isLoadingLive = true;
     setLiveStatus("Memuat data terbaru…", false);
     var bust = (DASHBOARD_CSV_URL.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now();
     fetch(DASHBOARD_CSV_URL + bust, { cache: "no-store" })
@@ -2280,13 +2288,31 @@
         var summary = DashboardETL.csvTextToSummary(csvText);
         if (!summary || summary.total_all == null) throw new Error("Data kosong / format tidak dikenali");
         renderAll(summary, summary.updatedAt);
-        setLiveStatus("Data live dari Google Sheet", false);
+        setLiveStatus("Data live dari Google Sheet · auto-update tiap " + Math.round(AUTO_REFRESH_MS / 60000) + " menit", false);
       })
       .catch(function (err) {
         console.error("Gagal memuat data live:", err);
         setLiveStatus("Gagal memuat data live — menampilkan data snapshot terakhir", true);
-      });
-  })();
+      })
+      .finally(function () { isLoadingLive = false; });
+  }
+
+  function scheduleAutoRefresh() {
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    autoRefreshTimer = setInterval(function () {
+      if (document.hidden) return; // skip while tab is in the background
+      loadLiveData();
+    }, AUTO_REFRESH_MS);
+  }
+
+  // when the tab becomes visible again after being backgrounded, refresh right away
+  // instead of waiting for the next tick, so switching back always shows current data.
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) loadLiveData();
+  });
+
+  loadLiveData();
+  scheduleAutoRefresh();
 })();
 </script>
 </body>
