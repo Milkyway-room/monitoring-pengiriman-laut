@@ -323,12 +323,12 @@
   .adv-filter-field label { font-size: 10.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
   .adv-filter-field .date-range { display: flex; align-items: center; gap: 6px; }
   .adv-filter-field .date-range span { font-size: 11px; color: var(--muted); }
-  .adv-filters input[type="date"], .adv-filters select {
+  .adv-filters input[type="date"], .adv-filters input[type="text"], .adv-filters select {
     font: inherit; font-size: 12.5px; color: var(--ink);
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     padding: 6px 9px; min-width: 108px;
   }
-  .adv-filters select { min-width: 140px; }
+  .adv-filters select, .adv-filters input[type="text"] { min-width: 140px; }
   .adv-filter-reset {
     font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-2);
     background: transparent; border: 1px solid var(--border); border-radius: 8px;
@@ -485,15 +485,18 @@
       </div>
       <div class="adv-filter-field">
         <label for="filterOrigin">Origin</label>
-        <select id="filterOrigin"><option value="all">Semua</option></select>
+        <input type="text" id="filterOrigin" list="filterOriginList" placeholder="Semua" autocomplete="off">
+        <datalist id="filterOriginList"></datalist>
       </div>
       <div class="adv-filter-field">
         <label for="filterVendor">Vendor</label>
-        <select id="filterVendor"><option value="all">Semua</option></select>
+        <input type="text" id="filterVendor" list="filterVendorList" placeholder="Semua" autocomplete="off">
+        <datalist id="filterVendorList"></datalist>
       </div>
       <div class="adv-filter-field">
         <label for="filterTujuan">Tujuan</label>
-        <select id="filterTujuan"><option value="all">Semua</option></select>
+        <input type="text" id="filterTujuan" list="filterTujuanList" placeholder="Semua" autocomplete="off">
+        <datalist id="filterTujuanList"></datalist>
       </div>
       <button type="button" class="adv-filter-reset" id="filterReset">Reset filter</button>
     </div>
@@ -1631,18 +1634,34 @@
   var filterOriginEl = document.getElementById("filterOrigin");
   var filterVendorEl = document.getElementById("filterVendor");
   var filterTujuanEl = document.getElementById("filterTujuan");
+  var filterOriginListEl = document.getElementById("filterOriginList");
+  var filterVendorListEl = document.getElementById("filterVendorList");
+  var filterTujuanListEl = document.getElementById("filterTujuanList");
   var filterStuffFromEl = document.getElementById("filterStuffFrom");
   var filterStuffToEl = document.getElementById("filterStuffTo");
   var filterResetEl = document.getElementById("filterReset");
 
-  function populateSelect(selectEl, values, currentValue) {
+  // filter fields are typeable text inputs with a <datalist> for autocomplete —
+  // empty text means "Semua" (all); a typed value is matched exactly (case-insensitive)
+  // against the list of known values, same as picking it from the old <select>.
+  function populateFilterInput(inputEl, datalistEl, values, currentValue) {
     var hasCurrent = currentValue === "all" || values.indexOf(currentValue) !== -1;
-    selectEl.innerHTML = '<option value="all">Semua</option>' +
-      values.map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join("");
-    selectEl.value = hasCurrent ? currentValue : "all";
+    datalistEl.innerHTML = values.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join("");
+    inputEl.value = hasCurrent && currentValue !== "all" ? currentValue : "";
     if (!hasCurrent) return currentValue !== "all"; // signal reset happened
     return false;
   }
+
+  function resolveTypedFilterValue(typed, values) {
+    var v = (typed || "").trim();
+    if (!v) return "all";
+    var exact = values.filter(function (x) { return x === v; });
+    if (exact.length) return exact[0];
+    var ci = values.filter(function (x) { return x.toLowerCase() === v.toLowerCase(); });
+    return ci.length ? ci[0] : v;
+  }
+
+  var globalFilterValues = { origins: [], vendors: [], tujuans: [] };
 
   function renderGlobalFilterOptions() {
     var origins = [], vendors = [], tujuans = [];
@@ -1656,16 +1675,17 @@
     origins.sort();
     vendors.sort();
     tujuans.sort();
-    if (populateSelect(filterOriginEl, origins, globalFilters.origin)) globalFilters.origin = "all";
-    if (populateSelect(filterVendorEl, vendors, globalFilters.vendor)) globalFilters.vendor = "all";
-    if (populateSelect(filterTujuanEl, tujuans, globalFilters.tujuan)) globalFilters.tujuan = "all";
+    globalFilterValues = { origins: origins, vendors: vendors, tujuans: tujuans };
+    if (populateFilterInput(filterOriginEl, filterOriginListEl, origins, globalFilters.origin)) globalFilters.origin = "all";
+    if (populateFilterInput(filterVendorEl, filterVendorListEl, vendors, globalFilters.vendor)) globalFilters.vendor = "all";
+    if (populateFilterInput(filterTujuanEl, filterTujuanListEl, tujuans, globalFilters.tujuan)) globalFilters.tujuan = "all";
     filterStuffFromEl.value = globalFilters.stuffFrom;
     filterStuffToEl.value = globalFilters.stuffTo;
   }
 
-  filterOriginEl.addEventListener("change", function () { globalFilters.origin = filterOriginEl.value; renderFilteredAll(); });
-  filterVendorEl.addEventListener("change", function () { globalFilters.vendor = filterVendorEl.value; renderFilteredAll(); });
-  filterTujuanEl.addEventListener("change", function () { globalFilters.tujuan = filterTujuanEl.value; renderFilteredAll(); });
+  filterOriginEl.addEventListener("input", function () { globalFilters.origin = resolveTypedFilterValue(filterOriginEl.value, globalFilterValues.origins); renderFilteredAll(); });
+  filterVendorEl.addEventListener("input", function () { globalFilters.vendor = resolveTypedFilterValue(filterVendorEl.value, globalFilterValues.vendors); renderFilteredAll(); });
+  filterTujuanEl.addEventListener("input", function () { globalFilters.tujuan = resolveTypedFilterValue(filterTujuanEl.value, globalFilterValues.tujuans); renderFilteredAll(); });
   filterStuffFromEl.addEventListener("change", function () { globalFilters.stuffFrom = filterStuffFromEl.value; renderFilteredAll(); });
   filterStuffToEl.addEventListener("change", function () { globalFilters.stuffTo = filterStuffToEl.value; renderFilteredAll(); });
   filterResetEl.addEventListener("click", function () {
