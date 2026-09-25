@@ -498,6 +498,11 @@
         <input type="text" id="filterTujuan" list="filterTujuanList" placeholder="Semua" autocomplete="off">
         <datalist id="filterTujuanList"></datalist>
       </div>
+      <div class="adv-filter-field">
+        <label for="filterBu">BU</label>
+        <input type="text" id="filterBu" list="filterBuList" placeholder="Semua" autocomplete="off">
+        <datalist id="filterBuList"></datalist>
+      </div>
       <button type="button" class="adv-filter-reset" id="filterReset">Reset filter</button>
     </div>
   </div>
@@ -1438,7 +1443,7 @@
   var ACTIVE_ROWS = [];
   var TOTAL_ALL = 0;
   var TOTAL_DELIVERED = 0;
-  var globalFilters = { stuffFrom: "", stuffTo: "", origin: "all", vendor: "all", tujuan: "all" };
+  var globalFilters = { stuffFrom: "", stuffTo: "", origin: "all", vendor: "all", tujuan: "all", bu: "all" };
 
   var STAGE_TO_POSITION = { "POO": "POO", "Sailing": "On Sailling", "Yard": "Yard", "Dooring": "Dooring" };
 
@@ -1477,6 +1482,7 @@
     if (globalFilters.origin !== "all" && (SITE_LABEL[r.site] || r.site) !== globalFilters.origin) return false;
     if (globalFilters.vendor !== "all" && r.vendor !== globalFilters.vendor) return false;
     if (globalFilters.tujuan !== "all" && r.tujuan !== globalFilters.tujuan) return false;
+    if (globalFilters.bu !== "all" && r.bu !== globalFilters.bu) return false;
     if (globalFilters.stuffFrom && (!r.date_stuffing_iso || r.date_stuffing_iso < globalFilters.stuffFrom)) return false;
     if (globalFilters.stuffTo && (!r.date_stuffing_iso || r.date_stuffing_iso > globalFilters.stuffTo)) return false;
     return true;
@@ -1634,9 +1640,11 @@
   var filterOriginEl = document.getElementById("filterOrigin");
   var filterVendorEl = document.getElementById("filterVendor");
   var filterTujuanEl = document.getElementById("filterTujuan");
+  var filterBuEl = document.getElementById("filterBu");
   var filterOriginListEl = document.getElementById("filterOriginList");
   var filterVendorListEl = document.getElementById("filterVendorList");
   var filterTujuanListEl = document.getElementById("filterTujuanList");
+  var filterBuListEl = document.getElementById("filterBuList");
   var filterStuffFromEl = document.getElementById("filterStuffFrom");
   var filterStuffToEl = document.getElementById("filterStuffTo");
   var filterResetEl = document.getElementById("filterReset");
@@ -1661,24 +1669,27 @@
     return ci.length ? ci[0] : v;
   }
 
-  var globalFilterValues = { origins: [], vendors: [], tujuans: [] };
+  var globalFilterValues = { origins: [], vendors: [], tujuans: [], bus: [] };
 
   function renderGlobalFilterOptions() {
-    var origins = [], vendors = [], tujuans = [];
-    var seenOrigin = {}, seenVendor = {}, seenTujuan = {};
+    var origins = [], vendors = [], tujuans = [], bus = [];
+    var seenOrigin = {}, seenVendor = {}, seenTujuan = {}, seenBu = {};
     ACTIVE_ROWS.forEach(function (r) {
       var o = SITE_LABEL[r.site] || r.site;
       if (o && !seenOrigin[o]) { seenOrigin[o] = true; origins.push(o); }
       if (r.vendor && !seenVendor[r.vendor]) { seenVendor[r.vendor] = true; vendors.push(r.vendor); }
       if (r.tujuan && !seenTujuan[r.tujuan]) { seenTujuan[r.tujuan] = true; tujuans.push(r.tujuan); }
+      if (r.bu && !seenBu[r.bu]) { seenBu[r.bu] = true; bus.push(r.bu); }
     });
     origins.sort();
     vendors.sort();
     tujuans.sort();
-    globalFilterValues = { origins: origins, vendors: vendors, tujuans: tujuans };
+    bus.sort();
+    globalFilterValues = { origins: origins, vendors: vendors, tujuans: tujuans, bus: bus };
     if (populateFilterInput(filterOriginEl, filterOriginListEl, origins, globalFilters.origin)) globalFilters.origin = "all";
     if (populateFilterInput(filterVendorEl, filterVendorListEl, vendors, globalFilters.vendor)) globalFilters.vendor = "all";
     if (populateFilterInput(filterTujuanEl, filterTujuanListEl, tujuans, globalFilters.tujuan)) globalFilters.tujuan = "all";
+    if (populateFilterInput(filterBuEl, filterBuListEl, bus, globalFilters.bu)) globalFilters.bu = "all";
     filterStuffFromEl.value = globalFilters.stuffFrom;
     filterStuffToEl.value = globalFilters.stuffTo;
   }
@@ -1688,8 +1699,9 @@
   filterTujuanEl.addEventListener("input", function () { globalFilters.tujuan = resolveTypedFilterValue(filterTujuanEl.value, globalFilterValues.tujuans); renderFilteredAll(); });
   filterStuffFromEl.addEventListener("change", function () { globalFilters.stuffFrom = filterStuffFromEl.value; renderFilteredAll(); });
   filterStuffToEl.addEventListener("change", function () { globalFilters.stuffTo = filterStuffToEl.value; renderFilteredAll(); });
+  filterBuEl.addEventListener("input", function () { globalFilters.bu = resolveTypedFilterValue(filterBuEl.value, globalFilterValues.bus); renderFilteredAll(); });
   filterResetEl.addEventListener("click", function () {
-    globalFilters = { stuffFrom: "", stuffTo: "", origin: "all", vendor: "all", tujuan: "all" };
+    globalFilters = { stuffFrom: "", stuffTo: "", origin: "all", vendor: "all", tujuan: "all", bu: "all" };
     renderGlobalFilterOptions();
     renderFilteredAll();
   });
@@ -2209,6 +2221,7 @@
       site: r.pt || "",
       stage: r.sg || "",
       tujuan: r.tj || "",
+      bu: r.bu || "",
       vendor: r.vd || "",
       pelayaran: r.pl || "",
       vessel: r.vs || "",
