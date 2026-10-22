@@ -1,8 +1,8 @@
 /*
  * etl-client.js
- * Client-side port of etl_v6.py — turns the raw "Monitoring Pengiriman Laut" sheet
- * (exported as CSV) into the same compact `summary` object the dashboard expects
- * ({ total_all, total_delivered, active_rows, updatedAt }).
+ * Client-side port of etl_v6.py — turns the raw "Monitoring Pengiriman Laut"
+ * sheet (exported as CSV) into the same compact `summary` object the
+ * dashboard expects ({ total_all, total_delivered, active_rows, updatedAt }).
  *
  * Depends on PapaParse (https://www.papaparse.com/) being loaded first.
  *
@@ -10,6 +10,13 @@
  * fallback), never by position — so inserting/reordering columns in the sheet
  * is safe as long as the header text itself isn't renamed. This mirrors the
  * `find_col()` helper in etl_v6.py exactly.
+ *
+ * 2026-10-22 update: some rows (currently all "NDC CORP Sidoarjo" rows) have
+ * a blank "Port" cell in the sheet even though Position is active — a
+ * formula/fill gap upstream in the sheet, not a real "no origin" case. Added
+ * a SUPPLY SITE -> Port fallback so those shipments still show up under the
+ * correct origin site (Surabaya) instead of silently vanishing from every
+ * Port-based breakdown. See SUPPLY_TO_PORT_FALLBACK below.
  */
 (function (global) {
   "use strict";
@@ -25,6 +32,17 @@
     jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
   };
   var MON_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // Fallback mapping used only when the sheet's own "Port" cell is blank for
+  // an active row — derived from the rows that DO have Port filled in (every
+  // SUPPLY SITE value maps 1:1 to a single Port value in the live data).
+  var SUPPLY_TO_PORT_FALLBACK = {
+    "NDC HCI Cikupa": "Jakarta",
+    "NDC HCI jababeka": "Jakarta",
+    "NDC AHI jababeka": "Jakarta",
+    "IND JABABEKA": "Jakarta",
+    "NDC CORP Sidoarjo": "Sidoarjo",
+  };
 
   function normWs(s) {
     return String(s).replace(/\s+/g, "").toLowerCase();
@@ -149,6 +167,7 @@
       position: findCol(headers, "Position"),
       noSi: findCol(headers, "No SI"),
       port: findCol(headers, "Port"),
+      supplySite: findCol(headers, "SUPPLY SITE"),
       tujuan: findCol(headers, "Tujuan"),
       bu: findCol(headers, "BU"),
     };
@@ -205,9 +224,15 @@
         else if (ctypeRaw.indexOf("40") !== -1) ctype = "40";
         else ctype = ctypeRaw;
 
+        var portVal = safeStr(r[COL.port]);
+        if (!portVal && COL.supplySite) {
+          var supplyVal = safeStr(r[COL.supplySite]);
+          portVal = SUPPLY_TO_PORT_FALLBACK[supplyVal] || "";
+        }
+
         var row = {
           si: safeStr(r[COL.noSi]),
-          pt: safeStr(r[COL.port]),
+          pt: portVal,
           sg: stageKey,
           tj: safeStr(r[COL.tujuan]),
           bu: COL.bu ? safeStr(r[COL.bu]) : "",
