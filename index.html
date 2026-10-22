@@ -1211,8 +1211,19 @@
     if (existing) {
       existing.remove();
       card.classList.remove("expanded");
+      expandState.origin[stage + "||" + site] = false;
       return;
     }
+    expandOriginCard(stage, site, card);
+  }
+
+  // Builds and appends the expanded content for an origin card. Split out of
+  // toggleOriginExpand so a re-render can call this directly (skipping the
+  // "is it already open" check) to restore a card that was open before the
+  // refresh — building the content fresh each time so it reflects the latest
+  // data, while re-applying whichever nested Tujuan vessel tables were open.
+  function expandOriginCard(stage, site, card) {
+    var originKey = stage + "||" + site;
     var built = buildOriginExpandHtml(stage, site);
     var div = document.createElement("div");
     div.className = "origin-expand";
@@ -1229,10 +1240,22 @@
       }
       var head = e.target.closest(".tujuan-head");
       if (!head) return;
-      head.closest(".tujuan-group").classList.toggle("expanded");
+      var group = head.closest(".tujuan-group");
+      var tj = group.getAttribute("data-tj") || "";
+      var nowExpanded = group.classList.toggle("expanded");
+      expandState.nested[originKey + "||" + tj] = nowExpanded;
+    });
+    // restore whichever Tujuan vessel tables (inside this origin card) were
+    // left open before this re-render
+    div.querySelectorAll(".tujuan-group").forEach(function (g) {
+      var tj = g.getAttribute("data-tj") || "";
+      if (expandState.nested[originKey + "||" + tj]) {
+        g.classList.add("expanded");
+      }
     });
     card.appendChild(div);
     card.classList.add("expanded");
+    expandState.origin[originKey] = true;
   }
 
   function renderPooDateChart(data, svg, hint, stageLabel, detailMap) {
@@ -1748,6 +1771,18 @@
   var currentStageDetailTab = "POO";
   var stageDetailRowsByStage = { POO: [], Sailing: [], Yard: [], Dooring: [] };
 
+  // Remembers which origin/tujuan cards (and, within an origin card, which
+  // nested Tujuan vessel table) the user has clicked open, so that a
+  // re-render triggered by auto-refresh or a filter change can put them
+  // straight back into the same open state instead of silently collapsing
+  // everything back to closed. Keyed by stage (and site/tujuan), not by DOM
+  // node, since every render rebuilds fresh nodes.
+  var expandState = {
+    origin: {}, // key: stage + "||" + site        -> true if that origin card is expanded (POO)
+    tujuan: {}, // key: stage + "||" + tujuan       -> true if that tujuan card is expanded (Sailing/Yard/Dooring)
+    nested: {}  // key: stage + "||" + site + "||" + tujuan -> true if that vessel table is expanded inside an origin card
+  };
+
   function stageDetailConfig(stage) {
     if (stage === "Sailing") {
       return {
@@ -1972,6 +2007,10 @@
         toggleOriginExpand(stage, site, card);
       });
       wrap.appendChild(card);
+      // was this card left open before this render? put it right back.
+      if (expandState.origin[stage + "||" + site]) {
+        expandOriginCard(stage, site, card);
+      }
     });
   }
 
@@ -1985,8 +2024,15 @@
     if (existing) {
       existing.remove();
       card.classList.remove("expanded");
+      expandState.tujuan[stage + "||" + tj] = false;
       return;
     }
+    expandParetoCard(card, tj, tjRows, stage);
+  }
+
+  // Split out of toggleParetoExpand (see expandOriginCard above for why) so a
+  // re-render can restore a card that was open before the refresh.
+  function expandParetoCard(card, tj, tjRows, stage) {
     var cfg = stageDetailConfig(stage);
     var div = document.createElement("div");
     div.className = "origin-expand";
@@ -2004,24 +2050,33 @@
     var svgEl = div.querySelector(".poo-date-svg");
     var hintEl = div.querySelector(".tujuan-pareto-hint");
     renderPooDateChart(dateCounts(tjRows), svgEl, hintEl, stage, detailByDate(tjRows));
+    expandState.tujuan[stage + "||" + tj] = true;
   }
 
   // Toggles a Tujuan card's own expand-downward detail (its vessel schedule table).
   // Unlike origin cards, a Tujuan card at this level has no further nested grouping to
   // click through — the card itself already is the Tujuan — so clicking it reveals the
   // table directly.
-  function toggleTujuanExpand(card, html) {
+  function toggleTujuanExpand(card, html, stage, tj) {
     var existing = card.querySelector(".origin-expand");
     if (existing) {
       existing.remove();
       card.classList.remove("expanded");
+      if (stage && tj) expandState.tujuan[stage + "||" + tj] = false;
       return;
     }
+    expandTujuanCard(card, html, stage, tj);
+  }
+
+  // Split out of toggleTujuanExpand (see expandOriginCard above for why) so a
+  // re-render can restore a card that was open before the refresh.
+  function expandTujuanCard(card, html, stage, tj) {
     var div = document.createElement("div");
     div.className = "origin-expand";
     div.innerHTML = html;
     card.appendChild(div);
     card.classList.add("expanded");
+    if (stage && tj) expandState.tujuan[stage + "||" + tj] = true;
   }
 
   // Some stages (e.g. Sailing) aren't usefully split by origin site the way POO is —
@@ -2069,6 +2124,10 @@
           toggleParetoExpand(card, tj, tjRows, stage);
         });
         wrap.appendChild(card);
+        // was this card left open before this render? put it right back.
+        if (expandState.tujuan[stage + "||" + tj]) {
+          expandParetoCard(card, tj, tjRows, stage);
+        }
       } else {
         card.addEventListener("click", function (e) {
           var vcell = e.target.closest("[data-vessel-key]");
@@ -2078,9 +2137,13 @@
             return;
           }
           if (e.target.closest(".origin-expand")) return;
-          toggleTujuanExpand(card, '<div class="origin-expand-inner">' + parts.tableHtml + '</div>');
+          toggleTujuanExpand(card, '<div class="origin-expand-inner">' + parts.tableHtml + '</div>', stage, tj);
         });
         wrap.appendChild(card);
+        // was this card left open before this render? put it right back.
+        if (expandState.tujuan[stage + "||" + tj]) {
+          expandTujuanCard(card, '<div class="origin-expand-inner">' + parts.tableHtml + '</div>', stage, tj);
+        }
       }
     });
   }
