@@ -170,6 +170,7 @@
       supplySite: findCol(headers, "SUPPLY SITE"),
       tujuan: findCol(headers, "Tujuan"),
       bu: findCol(headers, "BU"),
+      sitePenerima: findCol(headers, "Site Penerima"),
     };
     COL.targetSla2 = headers.indexOf("Target SLA.1") !== -1 ? "Target SLA.1" : findCol(headers, "Target SLA");
 
@@ -236,6 +237,7 @@
           sg: stageKey,
           tj: safeStr(r[COL.tujuan]),
           bu: COL.bu ? safeStr(r[COL.bu]) : "",
+          sp: COL.sitePenerima ? safeStr(r[COL.sitePenerima]) : "",
           vd: safeStr(r[COL.vendor]),
           pl: safeStr(r[COL.pelayaran]),
           vs: safeStr(r[COL.vessel]),
