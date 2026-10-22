@@ -20,7 +20,8 @@
     --border:     rgba(11,11,11,0.14);
     --accent:     #2a78d6;
     --accent-2:   #1baf7a;
-    --accent-3:   #8b5cf6;
+    --accent-3:   #6250d6;
+    --accent-4:   #eb6834;
     --good:       #0ca30c;
     --warning:    #fab219;
     --serious:    #ec835a;
@@ -45,7 +46,8 @@
     --border:    rgba(255,255,255,0.10);
     --accent:    #3987e5;
     --accent-2:  #199e70;
-    --accent-3:  #a78bfa;
+    --accent-3:  #9085e9;
+    --accent-4:  #d95926;
     --good:      #0ca30c;
     --warning:   #fab219;
     --serious:   #ec835a;
@@ -166,7 +168,7 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .dot.jkt { background: var(--accent); }
   .dot.sda { background: var(--accent-2); }
-  .dot.tujuan { background: var(--accent-3); }
+  .dot.tujuan { background: var(--card-accent, var(--accent-3)); }
   .site-card .site-total { font-size: 12.5px; color: var(--ink-2); }
   .site-card .site-total b { color: var(--ink); font-weight: 700; }
   .site-card.clickable {
@@ -409,6 +411,16 @@
   .status-pill.warn { background: var(--warning-bg); color: color-mix(in srgb, var(--warning) 55%, var(--ink)); }
   .over-tag { font-size: 11px; color: var(--critical); font-weight: 600; }
   .empty-row td { text-align: center; color: var(--muted); padding: 28px 10px; }
+  .stage-count-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; padding: 2px 9px; border-radius: 999px;
+    font-weight: 700; font-size: 12.5px; line-height: 1.5;
+    background: color-mix(in srgb, var(--chip-color) 14%, var(--surface));
+    color: var(--chip-color);
+  }
+  .stage-count-chip.is-zero {
+    background: transparent; color: var(--muted); font-weight: 400;
+  }
 
   footer { text-align: center; font-size: 11.5px; color: var(--muted); padding-top: 6px; }
   footer a { color: inherit; }
@@ -575,7 +587,7 @@
 
   <div class="section">
     <div class="section-head">
-      <h2 style="--h2-accent: var(--warning);">POD (Port of Discharge) &mdash; status alert &amp; backlog per tanggal ATA</h2>
+      <h2 style="--h2-accent: var(--accent-4);">POD (Port of Discharge) &mdash; status alert &amp; backlog per tanggal ATA</h2>
       <span class="hint" id="yardHint">&mdash;</span>
     </div>
     <div id="yardWrap"></div>
@@ -592,10 +604,10 @@
           <thead>
             <tr>
               <th>Tujuan</th>
-              <th>POO</th>
-              <th>Sailing</th>
-              <th>POD</th>
-              <th>Dooring</th>
+              <th><span class="dot" style="background: var(--accent); display:inline-block; margin-right:5px;"></span>POO</th>
+              <th><span class="dot" style="background: var(--accent-2); display:inline-block; margin-right:5px;"></span>Sailing</th>
+              <th><span class="dot" style="background: var(--accent-4); display:inline-block; margin-right:5px;"></span>POD</th>
+              <th><span class="dot" style="background: var(--accent-3); display:inline-block; margin-right:5px;"></span>Dooring</th>
               <th>Total Aktif</th>
               <th>Butuh Perhatian</th>
             </tr>
@@ -699,10 +711,10 @@
   
   var STAGE_ORDER = ["POO", "On Sailling", "Yard", "Dooring"];
   var STAGE_LABEL = { "POO": "Port of Origin (POO)", "On Sailling": "Sailing", "Yard": "Port of Discharge (POD)", "Dooring": "Dooring" };
-  var STAGE_COLOR_VAR = { "POO": "--accent", "On Sailling": "--accent-2", "Yard": "--warning", "Dooring": "--muted" };
+  var STAGE_COLOR_VAR = { "POO": "--accent", "On Sailling": "--accent-2", "Yard": "--accent-4", "Dooring": "--accent-3" };
   // same palette, keyed by the STAGE_LABEL strings used on the per-stage dashboard page,
   // so each stage's page keeps the same accent identity as its card/bar elsewhere.
-  var STAGE_LABEL_ACCENT = { "POO": "--accent", "Sailing": "--accent-2", "Yard": "--warning", "Dooring": "--muted" };
+  var STAGE_LABEL_ACCENT = { "POO": "--accent", "Sailing": "--accent-2", "Yard": "--accent-4", "Dooring": "--accent-3" };
   function applyH2Accent(id, stage) {
     var el = document.getElementById(id);
     if (el) el.style.setProperty("--h2-accent", "var(" + (STAGE_LABEL_ACCENT[stage] || "--accent") + ")");
@@ -1711,6 +1723,11 @@
   // how many of those need attention (same risk definition as isStageRisky).
   // Operates on the same filtered rows as the rest of the page, so it follows
   // the global filter bar too.
+  function stageChip(n, colorVar) {
+    if (!n) return '<span class="stage-count-chip is-zero">0</span>';
+    return '<span class="stage-count-chip" style="--chip-color: var(' + colorVar + ')">' + fmtInt(n) + '</span>';
+  }
+
   function renderTujuanStageTable(filteredRows) {
     var body = document.getElementById("tujuanStageBody");
     body.innerHTML = "";
@@ -1747,10 +1764,10 @@
       var tr = document.createElement("tr");
       tr.innerHTML =
         '<td class="route"><span class="to">' + esc(tj) + '</span></td>' +
-        '<td class="mono tab-num">' + fmtInt(g.POO) + '</td>' +
-        '<td class="mono tab-num">' + fmtInt(g.Sailing) + '</td>' +
-        '<td class="mono tab-num">' + fmtInt(g.Yard) + '</td>' +
-        '<td class="mono tab-num">' + fmtInt(g.Dooring) + '</td>' +
+        '<td class="mono tab-num">' + stageChip(g.POO, "--accent") + '</td>' +
+        '<td class="mono tab-num">' + stageChip(g.Sailing, "--accent-2") + '</td>' +
+        '<td class="mono tab-num">' + stageChip(g.Yard, "--accent-4") + '</td>' +
+        '<td class="mono tab-num">' + stageChip(g.Dooring, "--accent-3") + '</td>' +
         '<td class="mono tab-num"><b>' + fmtInt(g.total) + '</b></td>' +
         '<td class="mono tab-num">' + (g.risky ? '<span class="over-tag">' + fmtInt(g.risky) + '</span>' : '—') + '</td>';
       body.appendChild(tr);
@@ -2101,6 +2118,7 @@
       var parts = buildTujuanBodyParts(tjRows, cfg, true);
       var card = document.createElement("div");
       card.className = "site-card clickable site-tujuan";
+      card.style.setProperty("--card-accent", "var(" + (STAGE_LABEL_ACCENT[stage] || "--accent-3") + ")");
       card.innerHTML =
         '<div class="site-head">' +
           '<span class="site-name"><span class="dot tujuan"></span>' + esc(tj) + '</span>' +
